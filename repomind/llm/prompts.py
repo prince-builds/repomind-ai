@@ -139,6 +139,52 @@ Retrieved code context:
 Summarize the key ideas in these code chunks in 5–8 bullet points."""
 
 
+def build_file_intelligence_prompt(
+    repo_name: str,
+    file_path: str,
+    context: str,
+) -> str:
+    """Prompt for deep single-file analysis using indexed and dependency context."""
+    return f"""Repository: {repo_name}
+Target file: {file_path}
+
+Context (indexed chunks, dependency graph, and related files):
+{context}
+
+Analyze **only** the target file `{file_path}` using the context above.
+
+Respond in markdown with these exact section headings (use bullet lists where appropriate):
+
+## Purpose
+What this file is responsible for in the repository.
+
+## Imports
+Key imports/modules and why they matter for this file.
+
+## Classes
+Classes defined in this file (name → brief role). If none, state "None".
+
+## Functions
+Important functions/methods (name → brief role). If none, state "None".
+
+## Dependencies
+How this file relates to other project files (who imports it, what it imports).
+
+## Data Flow
+How data or control flows through this file (inputs, outputs, side effects).
+
+## Interview Questions
+3–5 technical interview questions a candidate could answer using this file.
+
+## Potential Improvements
+Concrete, actionable improvements (readability, structure, tests, performance).
+
+Rules:
+- Do not invent symbols or files not supported by the context.
+- If a section lacks evidence, say what is missing instead of guessing.
+- Keep each section focused; avoid repeating the same point across sections."""
+
+
 def build_question_prompt(
     repo_name: str,
     question: str,

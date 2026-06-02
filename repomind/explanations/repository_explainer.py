@@ -7,6 +7,7 @@ from repomind.llm.prompts import (
     build_architecture_prompt,
     build_chunk_summary_prompt,
     build_code_purpose_prompt,
+    build_file_intelligence_prompt,
     build_file_responsibilities_prompt,
     build_question_prompt,
     format_retrieved_context,
@@ -106,6 +107,16 @@ class RepositoryExplainer:
             repo_name=repo_name,
             question="What are the responsibilities of the main files?",
         )
+
+    def explain_file_intelligence(
+        self,
+        repo_name: str,
+        file_path: str,
+        context: str,
+    ) -> str:
+        """Generate structured per-file analysis from pre-built RAG context."""
+        prompt = build_file_intelligence_prompt(repo_name, file_path, context)
+        return self.llm.complete(prompt, max_tokens=2500)
 
     def summarize_chunks(
         self,

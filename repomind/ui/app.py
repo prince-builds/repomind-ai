@@ -14,6 +14,8 @@ from repomind.architecture.architecture_analyzer import (
 from repomind.chunking.chunker import TextChunk, chunk_parsed_files
 from repomind.embeddings.embedder import EmbeddingError
 from repomind.explanations.repository_explainer import ExplanationResult, RepositoryExplainer
+from repomind.files.file_intelligence import FileIntelligenceResult, analyze_file
+from repomind.files.file_tree import build_file_tree, filter_paths
 from repomind.ingestion.file_scanner import scan_repository
 from repomind.ingestion.github_loader import (
     CloneResult,
@@ -185,7 +187,6 @@ def _render_architecture_section(result: AnalysisResult) -> None:
     if report is None:
         return
 
-    st.divider()
     st.subheader("Architecture analysis")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -320,9 +321,161 @@ def _search_and_explain(
             return None
 
 
+def _render_path_tree(tree: dict, *, key_prefix: str = "tree") -> None:
+    """Nested expanders for folder navigation; sets session selected_file on click."""
+    for name in sorted(tree.keys(), key=str.lower):
+        value = tree[name]
+        if isinstance(value, dict):
+            with st.expander(name, expanded=False):
+                _render_path_tree(value, key_prefix=f"{key_prefix}/{name}")
+        elif isinstance(value, str):
+            label = value.rsplit("/", 1)[-1]
+            if st.button(
+                label,
+                key=f"{key_prefix}:{value}",
+                help=value,
+                use_container_width=True,
+            ):
+                st.session_state["selected_file"] = value
+
+
+def _run_file_analysis(
+    result: AnalysisResult,
+    file_path: str,
+) -> FileIntelligenceResult | None:
+    """Generate per-file intelligence via Groq."""
+    repo_name = result.ingestion.clone.repo_info.full_name
+    repo_root = result.ingestion.clone.local_path
+    graph = result.architecture.graph if result.architecture else None
+
+    with st.spinner(f"Analyzing `{file_path}`…"):
+        try:
+            return analyze_file(
+                repo_name=repo_name,
+                repo_root=repo_root,
+                file_path=file_path,
+                chunks=result.chunks,
+                graph=graph,
+            )
+        except LLMConfigError as exc:
+            st.error(str(exc))
+            st.info("Copy `.env.example` to `.env` and set `GROQ_API_KEY`.")
+            return None
+        except LLMError as exc:
+            st.error(str(exc))
+            return None
+        except Exception as exc:
+            st.error(f"File analysis failed: {exc}")
+            return None
+
+
+def _render_file_intelligence(result: FileIntelligenceResult) -> None:
+    """Show structured file analysis and supporting context."""
+    st.markdown(result.answer)
+
+    if result.related_files:
+        st.markdown("**Related files (dependency expansion)**")
+        for path in result.related_files:
+            st.markdown(f"- `{path}`")
+
+    _render_retrieved_context(result.retrieval_hits)
+
+
+def _render_files_section(result: AnalysisResult) -> None:
+    """File tree sidebar and per-file Groq analysis."""
+    st.subheader("File Intelligence")
+    st.caption(
+        "Browse repository files and generate purpose, structure, dependencies, "
+        "data flow, interview questions, and improvement ideas."
+    )
+
+    paths = sorted(path.as_posix() for path in result.ingestion.files)
+    if not paths:
+        st.info("No scanned files available.")
+        return
+
+    col_tree, col_detail = st.columns([1, 2])
+
+    with col_tree:
+        query = st.text_input(
+            "Filter files",
+            placeholder="e.g. repomind/ui",
+            key="files_filter",
+        )
+        filtered = filter_paths(paths, query)
+        st.caption(f"{len(filtered)} of {len(paths)} files")
+
+        st.markdown("**Browse**")
+        if filtered:
+            _render_path_tree(build_file_tree(filtered))
+        else:
+            st.caption("No files match the filter.")
+
+        picker_options = ["— Select a file —", *filtered]
+        pick_index = 0
+        selected_file = st.session_state.get("selected_file")
+        if selected_file in filtered:
+            pick_index = picker_options.index(selected_file)
+
+        picked = st.selectbox(
+            "Quick select",
+            options=picker_options,
+            index=pick_index,
+            key="files_picker",
+        )
+        if picked != "— Select a file —":
+            st.session_state["selected_file"] = picked
+
+    file_path = st.session_state.get("selected_file")
+    if file_path and file_path not in paths:
+        st.session_state.pop("selected_file", None)
+        file_path = None
+
+    with col_detail:
+        if not file_path:
+            st.info("Select a file from the tree or quick select list.")
+            return
+
+        st.markdown(f"**Selected file:** `{file_path}`")
+
+        if st.button("Analyze file", type="primary", key="analyze_file_btn"):
+            analysis = _run_file_analysis(result, file_path)
+            if analysis:
+                st.session_state["last_file_analysis"] = analysis
+                _render_file_intelligence(analysis)
+        elif cached := st.session_state.get("last_file_analysis"):
+            if cached.file_path == file_path:
+                st.caption("Showing your last analysis for this file. Analyze again to refresh.")
+                _render_file_intelligence(cached)
+            else:
+                st.caption("Analyze this file to generate intelligence.")
+        else:
+            st.caption("Click **Analyze file** to generate intelligence.")
+
+
+def _render_analysis_workspace(result: AnalysisResult) -> None:
+    """Architecture, Files, and Q&A tabs after indexing."""
+    repo_name = result.ingestion.clone.repo_info.full_name
+    tab_arch, tab_files, tab_qa = st.tabs(["Architecture", "Files", "Q&A"])
+
+    with tab_arch:
+        _render_architecture_section(result)
+
+    with tab_files:
+        _render_files_section(result)
+
+    with tab_qa:
+        if result.retriever and result.retriever.is_ready:
+            _render_query_section(result.retriever, repo_name)
+        else:
+            st.warning(
+                "Search index was not built. Q&A requires embedded chunks from "
+                "supported file types."
+            )
+
+
 def _render_query_section(retriever: Retriever, repo_name: str) -> None:
     """Natural-language search with automatic AI explanation."""
-    st.divider()
     st.subheader("Ask about this repository")
     st.caption(f"Semantic search + AI explanation for **{repo_name}**")
 
@@ -374,6 +527,8 @@ def render_app() -> None:
             return
 
         st.session_state.pop("last_explanation", None)
+        st.session_state.pop("last_file_analysis", None)
+        st.session_state.pop("selected_file", None)
 
         with st.spinner(
             "Cloning, scanning, parsing, chunking, indexing, and analyzing architecture…"
@@ -399,18 +554,10 @@ def render_app() -> None:
         _save_analysis_to_session(result)
         _render_ingestion_section(result)
         _render_parse_chunk_section(result)
-        _render_architecture_section(result)
-
-        if result.retriever and result.retriever.is_ready:
-            _render_query_section(
-                result.retriever,
-                result.ingestion.clone.repo_info.full_name,
-            )
+        _render_analysis_workspace(result)
 
     elif st.session_state.get("analysis"):
         cached: AnalysisResult = st.session_state["analysis"]
         repo_name = st.session_state.get("repo_name", "repository")
         st.info(f"Using indexed data for **{repo_name}**. Analyze again to refresh.")
-        _render_architecture_section(cached)
-        if cached.retriever and cached.retriever.is_ready:
-            _render_query_section(cached.retriever, repo_name)
+        _render_analysis_workspace(cached)
