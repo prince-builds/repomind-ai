@@ -34,6 +34,215 @@ from repomind.retrieval.retriever import RetrievalHit, Retriever
 from repomind.retrieval.vector_store import VectorStoreError
 
 
+_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Global */
+html, body, [class*="css"]  {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Reduce top whitespace (header + container padding) */
+header[data-testid="stHeader"] { height: 0rem; }
+div[data-testid="stToolbar"] { visibility: hidden; height: 0%; position: fixed; }
+div[data-testid="stDecoration"] { visibility: hidden; height: 0%; position: fixed; }
+.block-container {
+  /* Target ~12px top padding */
+  padding-top: 0.75rem;
+  padding-bottom: 2.4rem;
+  max-width: 1400px;
+}
+
+/* Streamlit sometimes applies padding higher up; normalize it */
+div[data-testid="stAppViewContainer"] > .main {
+  padding-top: 0rem !important;
+}
+
+/* Ensure the hero (first content) sits at the top */
+.block-container > div:first-child { margin-top: 0rem !important; }
+.stMarkdown { margin-top: 0rem; }
+
+/* App background */
+.stApp {
+  background:
+    radial-gradient(900px 600px at 18% 10%, rgba(124, 92, 255, 0.22), transparent 60%),
+    /* reduced cyan glow ~40% */
+    radial-gradient(900px 600px at 88% 22%, rgba(41, 210, 247, 0.07), transparent 55%),
+    radial-gradient(900px 600px at 50% 92%, rgba(0, 255, 164, 0.06), transparent 50%),
+    linear-gradient(180deg, #070A12 0%, #070A12 40%, #060915 100%);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+  background: rgba(10, 12, 24, 0.55);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(18px);
+}
+
+/* Glass cards */
+.rm-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow:
+    0 18px 45px rgba(0,0,0,0.40),
+    0 1px 0 rgba(255,255,255,0.04) inset;
+  backdrop-filter: blur(16px);
+}
+.rm-card + .rm-card { margin-top: 12px; }
+
+/* Glass for Streamlit bordered containers (real containers, not HTML placeholders) */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 18px 45px rgba(0,0,0,0.40),
+    0 1px 0 rgba(255,255,255,0.04) inset !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* Hero */
+.rm-hero {
+  padding: 8px 14px 8px 14px;
+}
+.rm-title {
+  font-size: 32px;
+  line-height: 1.15;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+.rm-subtitle {
+  margin: 2px 0 0 0;
+  color: rgba(255,255,255,0.78);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.rm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.82);
+  font-size: 12px;
+}
+
+/* Typography hierarchy (Streamlit markdown headings) */
+.stMarkdown h2 {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.stMarkdown h3 {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  margin-top: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.stMarkdown p, .stMarkdown li {
+  color: rgba(255,255,255,0.82);
+}
+.stCaption, .stMarkdown small, .stMarkdown code {
+  color: rgba(255,255,255,0.72);
+}
+
+/* Metric cards */
+.rm-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.rm-metric {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 14px 14px 13px 14px;
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 16px 35px rgba(0,0,0,0.30),
+    0 1px 0 rgba(255,255,255,0.04) inset;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.rm-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    0 20px 48px rgba(0,0,0,0.40),
+    0 0 0 1px rgba(124, 92, 255, 0.10),
+    0 1px 0 rgba(255,255,255,0.05) inset;
+}
+.rm-metric-label {
+  color: rgba(255,255,255,0.70);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.rm-metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.rm-metric-hint {
+  color: rgba(255,255,255,0.62);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Streamlit widgets tweaks */
+div[data-testid="stExpander"] details {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+}
+div[data-testid="stExpander"] details summary {
+  padding: 10px 12px;
+}
+
+/* Inputs/buttons: softer + more premium */
+div[data-baseweb="input"] > div {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  border-radius: 12px !important;
+}
+div[data-baseweb="textarea"] textarea {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  border-radius: 12px !important;
+}
+button[kind="primary"] {
+  box-shadow: 0 12px 28px rgba(124, 92, 255, 0.22);
+}
+button:hover {
+  filter: brightness(1.02);
+}
+
+/* Tabs spacing + look */
+div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+  gap: 10px;
+  margin-top: 0.25rem;
+  padding: 4px 4px;
+}
+div[data-testid="stTabs"] [data-baseweb="tab"] {
+  border-radius: 999px;
+}
+
+@media (max-width: 1100px) {
+  .rm-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1800px) {
+  .block-container { max-width: 1600px; }
+}
+</style>
+"""
+
+
 @dataclass(frozen=True)
 class IngestionResult:
     """Summary of clone + file scan."""
@@ -179,6 +388,107 @@ def _render_parse_chunk_section(result: AnalysisResult) -> None:
 
     if len(chunks) > 5:
         st.caption(f"Showing 5 of {len(chunks)} chunks.")
+
+
+def _render_metric_cards(items: list[tuple[str, str, str | None]]) -> None:
+    """
+    Render metric cards in a glass grid.
+
+    items: list of (label, value, hint)
+    """
+    cards = []
+    for label, value, hint in items:
+        hint_html = f'<div class="rm-metric-hint">{hint}</div>' if hint else ""
+        cards.append(
+            f"""
+            <div class="rm-metric">
+              <div class="rm-metric-label">{label}</div>
+              <div class="rm-metric-value">{value}</div>
+              {hint_html}
+            </div>
+            """
+        )
+    st.markdown(
+        f'<div class="rm-metrics">{"".join(cards)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_overview_tab(result: AnalysisResult) -> None:
+    """Premium summary dashboard built from existing analysis output."""
+    info = result.ingestion.clone.repo_info
+    status = "Cloned" if result.ingestion.clone.was_cloned else "Loaded from cache"
+
+    with st.container(border=True):
+        st.markdown(f"### Repository\n**`{info.full_name}`**  \n{status}")
+        st.markdown(f"**Local path:** `{result.ingestion.clone.local_path}`")
+
+    # High-level structure metrics
+    vectors = 0
+    if result.retriever and result.retriever.is_ready:
+        vectors = result.retriever.store.size
+
+    entry_points = 0
+    internal_deps = 0
+    external_imports = 0
+    files_analyzed = 0
+    if result.architecture:
+        entry_points = len(result.architecture.entry_points)
+        internal_deps = result.architecture.internal_dependencies
+        external_imports = result.architecture.external_imports
+        files_analyzed = result.architecture.files_analyzed
+
+    # Lightweight, UI-side estimates for classes/functions
+    classes_detected = 0
+    functions_detected = 0
+    for parsed in result.parse_summary.parsed_files:
+        text = parsed.content
+        classes_detected += text.count("class ")
+        functions_detected += text.count("def ") + text.count("function ")
+
+    dependencies_found = internal_deps + external_imports
+
+    _render_metric_cards(
+        [
+            ("Files indexed", str(len(result.parse_summary.parsed_files)), "Parsed into the index"),
+            ("Chunks created", str(len(result.chunks)), "Text slices for retrieval"),
+            ("Dependencies found", str(dependencies_found), "Internal + external imports"),
+            ("Classes detected", str(classes_detected), "Heuristic count from parsed files"),
+            ("Functions detected", str(functions_detected), "Heuristic count from parsed files"),
+            ("Entry points", str(entry_points), "Likely starting files"),
+        ]
+    )
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        with st.container(border=True):
+            st.markdown("### Architecture summary (AI)")
+            if result.architecture_summary:
+                st.markdown(result.architecture_summary)
+            else:
+                st.info(
+                    f"{MISSING_GROQ_KEY_MESSAGE} to generate an AI architecture summary."
+                )
+                if result.architecture:
+                    with st.expander("Raw analysis context"):
+                        st.code(result.architecture.to_context_text())
+
+    with c2:
+        with st.container(border=True):
+            st.markdown("### Indexing snapshot")
+            supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+            st.caption(f"Supported parse types: {supported}")
+            if result.chunks:
+                with st.expander("Chunk preview (first 3)", expanded=False):
+                    for chunk in result.chunks[:3]:
+                        st.markdown(
+                            f"**`{chunk.file_path}`** · chunk `{chunk.chunk_index}` · "
+                            f"{chunk.char_count} chars"
+                        )
+                        st.code(chunk.content[:400] + ("…" if len(chunk.content) > 400 else ""))
+                        st.divider()
+            else:
+                st.warning("No chunks were created for this repository.")
 
 
 def _render_architecture_section(result: AnalysisResult) -> None:
@@ -383,10 +693,10 @@ def _render_file_intelligence(result: FileIntelligenceResult) -> None:
 
 def _render_files_section(result: AnalysisResult) -> None:
     """File tree sidebar and per-file Groq analysis."""
-    st.subheader("File Intelligence")
+    st.markdown("### File Intelligence")
     st.caption(
-        "Browse repository files and generate purpose, structure, dependencies, "
-        "data flow, interview questions, and improvement ideas."
+        "Browse files and generate purpose, structure, dependencies, data flow, "
+        "interview questions, and improvement ideas."
     )
 
     paths = sorted(path.as_posix() for path in result.ingestion.files)
@@ -397,34 +707,35 @@ def _render_files_section(result: AnalysisResult) -> None:
     col_tree, col_detail = st.columns([1, 2])
 
     with col_tree:
-        query = st.text_input(
-            "Filter files",
-            placeholder="e.g. repomind/ui",
-            key="files_filter",
-        )
-        filtered = filter_paths(paths, query)
-        st.caption(f"{len(filtered)} of {len(paths)} files")
+        with st.container(border=True):
+            query = st.text_input(
+                "Filter files",
+                placeholder="e.g. repomind/ui",
+                key="files_filter",
+            )
+            filtered = filter_paths(paths, query)
+            st.caption(f"{len(filtered)} of {len(paths)} files")
 
-        st.markdown("**Browse**")
-        if filtered:
-            _render_path_tree(build_file_tree(filtered))
-        else:
-            st.caption("No files match the filter.")
+            st.markdown("**Browse**")
+            if filtered:
+                _render_path_tree(build_file_tree(filtered))
+            else:
+                st.caption("No files match the filter.")
 
-        picker_options = ["— Select a file —", *filtered]
-        pick_index = 0
-        selected_file = st.session_state.get("selected_file")
-        if selected_file in filtered:
-            pick_index = picker_options.index(selected_file)
+            picker_options = ["— Select a file —", *filtered]
+            pick_index = 0
+            selected_file = st.session_state.get("selected_file")
+            if selected_file in filtered:
+                pick_index = picker_options.index(selected_file)
 
-        picked = st.selectbox(
-            "Quick select",
-            options=picker_options,
-            index=pick_index,
-            key="files_picker",
-        )
-        if picked != "— Select a file —":
-            st.session_state["selected_file"] = picked
+            picked = st.selectbox(
+                "Quick select",
+                options=picker_options,
+                index=pick_index,
+                key="files_picker",
+            )
+            if picked != "— Select a file —":
+                st.session_state["selected_file"] = picked
 
     file_path = st.session_state.get("selected_file")
     if file_path and file_path not in paths:
@@ -436,27 +747,33 @@ def _render_files_section(result: AnalysisResult) -> None:
             st.info("Select a file from the tree or quick select list.")
             return
 
-        st.markdown(f"**Selected file:** `{file_path}`")
+        with st.container(border=True):
+            st.markdown(f"**Selected file:** `{file_path}`")
 
-        if st.button("Analyze file", type="primary", key="analyze_file_btn"):
-            analysis = _run_file_analysis(result, file_path)
-            if analysis:
-                st.session_state["last_file_analysis"] = analysis
-                _render_file_intelligence(analysis)
-        elif cached := st.session_state.get("last_file_analysis"):
-            if cached.file_path == file_path:
-                st.caption("Showing your last analysis for this file. Analyze again to refresh.")
-                _render_file_intelligence(cached)
+            if st.button("Analyze file", type="primary", key="analyze_file_btn"):
+                analysis = _run_file_analysis(result, file_path)
+                if analysis:
+                    st.session_state["last_file_analysis"] = analysis
+                    _render_file_intelligence(analysis)
+            elif cached := st.session_state.get("last_file_analysis"):
+                if cached.file_path == file_path:
+                    st.caption("Showing your last analysis for this file. Analyze again to refresh.")
+                    _render_file_intelligence(cached)
+                else:
+                    st.caption("Analyze this file to generate intelligence.")
             else:
-                st.caption("Analyze this file to generate intelligence.")
-        else:
-            st.caption("Click **Analyze file** to generate intelligence.")
+                st.caption("Click **Analyze file** to generate intelligence.")
 
 
 def _render_analysis_workspace(result: AnalysisResult) -> None:
-    """Architecture, Files, and Q&A tabs after indexing."""
+    """Overview, Architecture, Files, Q&A, and Interview tabs after indexing."""
     repo_name = result.ingestion.clone.repo_info.full_name
-    tab_arch, tab_files, tab_qa = st.tabs(["Architecture", "Files", "Q&A"])
+    tab_overview, tab_arch, tab_files, tab_qa, tab_interview = st.tabs(
+        ["📊 Overview", "🏗 Architecture", "📁 Files", "💬 Q&A", "🎯 Interview"]
+    )
+
+    with tab_overview:
+        _render_overview_tab(result)
 
     with tab_arch:
         _render_architecture_section(result)
@@ -472,6 +789,82 @@ def _render_analysis_workspace(result: AnalysisResult) -> None:
                 "Search index was not built. Q&A requires embedded chunks from "
                 "supported file types."
             )
+
+    with tab_interview:
+        st.subheader("Interview pack")
+        st.caption("Generate interview questions and discussion prompts from the indexed repository context.")
+
+        if not (result.retriever and result.retriever.is_ready):
+            st.warning(
+                "Search index was not built. Interview pack requires embedded chunks."
+            )
+            return
+
+        preset = st.selectbox(
+            "Template",
+            options=[
+                "System design interview questions (repo-wide)",
+                "Code review prompts (repo-wide)",
+                "Architecture deep dive questions",
+            ],
+            index=0,
+            key="interview_template",
+        )
+        if preset == "System design interview questions (repo-wide)":
+            default_q = (
+                "Generate a structured interview pack for this repository: "
+                "5 system design questions, 5 code-reading questions, and 5 debugging scenarios. "
+                "For each, include what a strong answer should cover. "
+                "Cite file paths when relevant."
+            )
+        elif preset == "Code review prompts (repo-wide)":
+            default_q = (
+                "Create code review prompts for this repository: "
+                "areas to scrutinize, questions to ask, risks to check (security/perf/maintainability), "
+                "and suggested follow-ups. Cite file paths."
+            )
+        else:
+            default_q = (
+                "Create an architecture interview pack for this repository: "
+                "components, data flow, failure modes, trade-offs, and scaling concerns. "
+                "Include 8–12 questions and a brief rubric. Cite file paths."
+            )
+
+        question = st.text_area(
+            "Prompt",
+            value=default_q,
+            height=140,
+            key="interview_prompt",
+        )
+        top_k = st.slider(
+            "Retrieved chunks",
+            min_value=3,
+            max_value=12,
+            value=7,
+            key="interview_top_k",
+        )
+        if st.button("Generate interview pack", type="primary", key="gen_interview"):
+            if not question.strip():
+                st.warning("Enter a prompt first.")
+            else:
+                explanation = _search_and_explain(result.retriever, repo_name, question.strip(), top_k)
+                if explanation:
+                    st.session_state["last_interview_pack"] = explanation
+                    st.subheader("Interview output")
+                    st.markdown(explanation.answer)
+                    st.subheader("Referenced files")
+                    for path in explanation.referenced_files:
+                        st.markdown(f"- `{path}`")
+                    _render_retrieved_context(explanation.retrieval_hits)
+        elif st.session_state.get("last_interview_pack"):
+            st.caption("Showing your last generated interview pack. Generate again to refresh.")
+            explanation: ExplanationResult = st.session_state["last_interview_pack"]
+            st.subheader("Interview output")
+            st.markdown(explanation.answer)
+            st.subheader("Referenced files")
+            for path in explanation.referenced_files:
+                st.markdown(f"- `{path}`")
+            _render_retrieved_context(explanation.retrieval_hits)
 
 
 def _render_query_section(retriever: Retriever, repo_name: str) -> None:
@@ -506,16 +899,83 @@ def _render_query_section(retriever: Retriever, repo_name: str) -> None:
 
 
 def render_app() -> None:
-    st.title("RepoMind AI")
-    st.caption(f"v{__version__} — Understand any repository with AI")
+    st.set_page_config(
+        page_title="RepoMind AI",
+        page_icon="🧠",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+    st.markdown(_CSS, unsafe_allow_html=True)
 
-    repo_url = st.text_input(
-        "GitHub repository URL",
-        placeholder="https://github.com/owner/repo",
-        help="Public repos work without a token. Set GITHUB_TOKEN in .env for private repos.",
+    # Sidebar navigation (UX) + quick actions
+    st.sidebar.markdown(
+        f"""
+        <div class="rm-card">
+          <div class="rm-badge" style="font-size:11px; padding:4px 9px;">
+            RepoMind AI <span style="opacity:.7; font-size:10px;">v{__version__}</span>
+          </div>
+          <div style="height:8px;"></div>
+          <div style="font-weight:600; font-size:13px;">Navigation</div>
+          <div style="color:rgba(255,255,255,.70); font-size:12px; margin-top:6px;">
+            Use tabs in the main view. Keep this sidebar for quick actions.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    if st.button("Analyze repository", type="primary"):
+    if st.sidebar.button("Clear cached analysis", use_container_width=True):
+        for key in (
+            "analysis",
+            "repo_name",
+            "last_explanation",
+            "last_file_analysis",
+            "selected_file",
+            "last_interview_pack",
+        ):
+            st.session_state.pop(key, None)
+        st.sidebar.success("Cleared session state.")
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Tips**")
+    st.sidebar.caption(
+        "Set `GROQ_API_KEY` in `.env` for AI summaries, Q&A, and File Intelligence."
+    )
+
+    # Hero
+    st.markdown(
+        f"""
+        <div class="rm-card rm-hero">
+          <div class="rm-badge">Repository Intelligence • Architecture • Q&A • File Intelligence</div>
+          <div style="height:6px;"></div>
+          <div class="rm-title">RepoMind AI</div>
+          <p class="rm-subtitle">
+            Understand any GitHub repository: clone, index, map architecture, browse files, and ask precise questions —
+            all in one premium workspace.
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container(border=True):
+        repo_url = st.text_input(
+            "GitHub repository URL",
+            placeholder="https://github.com/owner/repo",
+            help="Public repos work without a token. Set GITHUB_TOKEN in .env for private repos.",
+            label_visibility="collapsed",
+        )
+        col_a, col_b, col_c = st.columns([1.2, 1, 1])
+        with col_a:
+            st.caption("Paste a GitHub URL and analyze to build an in-memory search index.")
+        with col_b:
+            analyze_clicked = st.button(
+                "Analyze repository", type="primary", use_container_width=True
+            )
+        with col_c:
+            st.caption("Dark UI • Glass cards • Sidebar actions")
+
+    if analyze_clicked:
         if not repo_url.strip():
             st.warning("Enter a repository URL.")
             return
@@ -552,8 +1012,11 @@ def render_app() -> None:
                 return
 
         _save_analysis_to_session(result)
-        _render_ingestion_section(result)
-        _render_parse_chunk_section(result)
+        # Keep the functional sections available (now behind a premium dashboard + tabs).
+        # with st.expander("Ingestion details", expanded=False):
+        #     _render_ingestion_section(result)
+        # with st.expander("Parsing & chunking details", expanded=False):
+        #     _render_parse_chunk_section(result)
         _render_analysis_workspace(result)
 
     elif st.session_state.get("analysis"):
