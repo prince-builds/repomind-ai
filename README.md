@@ -227,8 +227,7 @@ GitHub:
 https://github.com/prince-builds
 
 LinkedIn:
-https://www.linkedin.com/in/prince-yadav
-
+www.linkedin.com/in/princeyadavtech
 ---
 
 ## License
