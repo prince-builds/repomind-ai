@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 # Host only — the Groq SDK appends paths such as /openai/v1/chat/completions.
 DEFAULT_GROQ_BASE_URL = "https://api.groq.com"
 
