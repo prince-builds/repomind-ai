@@ -130,15 +130,17 @@ def clone_github_repo(url: str) -> CloneResult:
 
     target_dir.mkdir(parents=True, exist_ok=True)
     settings = get_settings()
-    clone_url = _authenticated_clone_url(repo_info.clone_url, settings.github_token)
+    token = settings.github_token.strip()
+    clone_url = _authenticated_clone_url(repo_info.clone_url, token)
 
     try:
         Repo.clone_from(clone_url, str(target_dir))
-    except GitCommandError as exc:
+    except GitCommandError:
+        # Suppress chained GitCommandError so auth token never leaks in logs or tracebacks
         raise GitHubURLError(
             f"Failed to clone {repo_info.full_name}. "
-            "Check the URL, network, and GITHUB_TOKEN for private repos."
-        ) from exc
+            "Check the URL, network connectivity, and GITHUB_TOKEN for private repos."
+        ) from None
 
     return CloneResult(
         repo_info=repo_info,

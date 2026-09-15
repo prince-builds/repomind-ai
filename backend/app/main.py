@@ -31,16 +31,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Enable CORS for Next.js frontend (default port 3000) and local development
+import os
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+
+def get_allowed_origins() -> list[str]:
+    """Parse CORS origins from CORS_ORIGINS env or use local defaults."""
+    raw = os.getenv("CORS_ORIGINS", "").strip()
+    if not raw:
+        return DEFAULT_CORS_ORIGINS
+    origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return origins or DEFAULT_CORS_ORIGINS
+
+
+# Enable CORS for Next.js frontend and configurable deployment domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "*",
-    ],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,3 +81,11 @@ def root() -> dict[str, str]:
         "version": __version__,
         "docs": "/docs",
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("backend.app.main:app", host="0.0.0.0", port=port, reload=False)
+
