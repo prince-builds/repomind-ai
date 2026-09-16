@@ -59,9 +59,9 @@ class RepositoryStore:
         self._embedder: Embedder | None = None
 
     def warmup(self) -> None:
-        """Pre-load SentenceTransformer model on startup to prevent cold-start latency."""
+        """Pre-load FastEmbed model on startup to prevent cold-start latency."""
         try:
-            logger.info("Warming up SentenceTransformer embedding model...")
+            logger.info("Warming up FastEmbed embedding model...")
             self._embedder = Embedder()
             _ = self._embedder.model
             logger.info("Embedding model loaded successfully.")
@@ -90,6 +90,8 @@ class RepositoryStore:
         embedding_dim = 0
 
         if chunks:
+            if self._embedder is None:
+                self._embedder = Embedder()
             retriever = Retriever(embedder=self._embedder)
             retriever.build_index(chunks)
             embedding_dim = retriever.store.embedding_dim
