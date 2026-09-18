@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   Network,
@@ -29,7 +29,7 @@ type TabKey = "overview" | "architecture" | "files" | "qa" | "interview";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
-  const [currentUrl, setCurrentUrl] = useState("https://github.com/prince-builds/ai-study-copilot");
+  const [currentUrl, setCurrentUrl] = useState("");
   const [activeRepoId, setActiveRepoId] = useState<string | null>(null);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
@@ -43,11 +43,6 @@ export default function Home() {
   const [architectureData, setArchitectureData] = useState<ArchitectureResponse | null>(null);
   const [filesData, setFilesData] = useState<FileListResponse | null>(null);
 
-  // Auto-analyze on initial load if repo cached or available
-  useEffect(() => {
-    handleAnalyze("https://github.com/prince-builds/ai-study-copilot");
-  }, []);
-
   const handleSelectFile = (filePath: string) => {
     // Clean file path if it has leading/trailing characters
     const cleanPath = filePath.trim().replace(/^[`'"]+|[`'"]+$/g, "");
@@ -56,13 +51,19 @@ export default function Home() {
   };
 
   const handleAnalyze = async (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      setError("Please enter a GitHub repository URL.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-    setCurrentUrl(url);
+    setCurrentUrl(trimmed);
 
     try {
       // 1. Trigger analysis / index build
-      const res = await api.analyzeRepository(url);
+      const res = await api.analyzeRepository(trimmed);
       setAnalyzeData(res);
       setActiveRepoId(res.repo_id);
 
@@ -94,6 +95,7 @@ export default function Home() {
       setArchitectureData(null);
       setFilesData(null);
       setSelectedFilePath(null);
+      setCurrentUrl("");
     } catch (err: unknown) {
       console.error("Clear failed:", err);
     } finally {

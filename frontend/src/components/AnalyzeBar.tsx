@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Loader2, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Search, Loader2, Sparkles, ArrowRight } from "lucide-react";
 
 interface AnalyzeBarProps {
   onAnalyze: (url: string) => void;
@@ -17,7 +17,13 @@ const PRESET_REPOS = [
 ];
 
 export const AnalyzeBar: React.FC<AnalyzeBarProps> = ({ onAnalyze, isLoading, activeUrl }) => {
-  const [inputUrl, setInputUrl] = useState(activeUrl || "https://github.com/prince-builds/ai-study-copilot");
+  const [inputUrl, setInputUrl] = useState(activeUrl || "");
+  const [prevActiveUrl, setPrevActiveUrl] = useState(activeUrl);
+
+  if (activeUrl !== prevActiveUrl) {
+    setPrevActiveUrl(activeUrl);
+    setInputUrl(activeUrl || "");
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +90,6 @@ export const AnalyzeBar: React.FC<AnalyzeBarProps> = ({ onAnalyze, isLoading, ac
               type="button"
               onClick={() => {
                 setInputUrl(preset.url);
-                onAnalyze(preset.url);
               }}
               disabled={isLoading}
               className="text-xs px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 hover:border-white/10 transition-colors"
