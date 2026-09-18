@@ -1,4 +1,4 @@
-"""Embed text chunks with sentence-transformers."""
+"""Embed text chunks with FastEmbed ONNX."""
 
 from repomind.embeddings.embedder import DEFAULT_MODEL, Embedder, EmbeddingError
 

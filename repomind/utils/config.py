@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 # Host only — the Groq SDK appends paths such as /openai/v1/chat/completions.
 DEFAULT_GROQ_BASE_URL = "https://api.groq.com"
 
@@ -31,6 +31,7 @@ class Settings:
     github_token: str
     embedding_model: str
     data_dir: Path
+    cors_origins: str = ""
 
 
 def get_settings() -> Settings:
@@ -43,4 +44,5 @@ def get_settings() -> Settings:
         github_token=os.getenv("GITHUB_TOKEN", ""),
         embedding_model=os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
         data_dir=Path(os.getenv("DATA_DIR", "repomind/data")),
+        cors_origins=os.getenv("CORS_ORIGINS", ""),
     )

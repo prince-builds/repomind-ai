@@ -5,7 +5,7 @@ from groq import APIConnectionError, APIStatusError, Groq
 from repomind.llm.prompts import SYSTEM_PROMPT
 from repomind.utils.config import DEFAULT_GROQ_BASE_URL, get_settings, normalize_groq_base_url
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 GROQ_BASE_URL = DEFAULT_GROQ_BASE_URL
 MISSING_GROQ_KEY_MESSAGE = "Missing GROQ_API_KEY in .env"
 

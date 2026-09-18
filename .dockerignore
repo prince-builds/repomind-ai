@@ -1,0 +1,27 @@
+# Git and repository configuration
+.git
+.gitignore
+
+# Environment files and secrets
+.env
+.env.*
+.env.example
+
+# Python virtual environments and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Frontend application (deployed separately on Vercel)
+frontend/
+
+# Local disk clones and runtime artifacts
+repomind/data/repos/
+repomind/data/repos/*
+.DS_Store
+screenshots/
+.streamlit/
+app.py
