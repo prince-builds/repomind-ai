@@ -43,9 +43,9 @@ class Embedder:
                 ) from exc
         return self._model
 
-    def embed_texts(self, texts: list[str]) -> np.ndarray:
+    def embed_texts(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
         """
-        Embed a list of strings.
+        Embed a list of strings using small batches to minimize peak memory.
 
         Returns a float32 array of shape (n_texts, embedding_dim).
         """
@@ -53,19 +53,23 @@ class Embedder:
             return np.array([], dtype=np.float32).reshape(0, 0)
 
         try:
-            embeddings = list(self.model.embed(texts))
-            return np.asarray(embeddings, dtype=np.float32)
+            embeddings_list = list(self.model.embed(texts, batch_size=batch_size))
+            result = np.asarray(embeddings_list, dtype=np.float32)
+            del embeddings_list
+            return result
         except Exception as exc:
             raise EmbeddingError("Failed to generate embeddings.") from exc
 
-    def embed_chunks(self, chunks: list[TextChunk]) -> np.ndarray:
+    def embed_chunks(self, chunks: list[TextChunk], batch_size: int = 32) -> np.ndarray:
         """Embed chunk content while metadata stays on TextChunk objects."""
         texts = [chunk.content for chunk in chunks]
-        return self.embed_texts(texts)
+        res = self.embed_texts(texts, batch_size=batch_size)
+        del texts
+        return res
 
     def embed_query(self, query: str) -> np.ndarray:
         """Embed a single search query (shape: embedding_dim,)."""
-        vectors = self.embed_texts([query.strip()])
+        vectors = self.embed_texts([query.strip()], batch_size=1)
         if vectors.size == 0:
             raise EmbeddingError("Query embedding is empty.")
         return vectors[0]
