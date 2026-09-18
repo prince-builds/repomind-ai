@@ -1,4 +1,4 @@
-"""Generate vector embeddings for text chunks using FastEmbed (ONNX Runtime)."""
+"""Generate lightweight vector embeddings for text chunks using FastEmbed (ONNX Runtime CPU)."""
 
 import numpy as np
 from fastembed import TextEmbedding
@@ -69,4 +69,3 @@ class Embedder:
         if vectors.size == 0:
             raise EmbeddingError("Query embedding is empty.")
         return vectors[0]
-
