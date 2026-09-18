@@ -1,6 +1,7 @@
 """Clone GitHub repositories into local storage."""
 
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
@@ -110,7 +111,7 @@ def clone_github_repo(url: str) -> CloneResult:
     Clone a GitHub repository into repomind/data/repos/{owner}-{repo}/.
 
     If the repo is already cloned (.git present), reuses the local copy
-    and does not clone again.
+    and does not clone again. Uses depth=1 shallow clone for performance and low resource consumption.
     """
     repo_info = parse_github_url(url)
     target_dir = get_repos_dir() / repo_info.folder_name
@@ -122,11 +123,8 @@ def clone_github_repo(url: str) -> CloneResult:
             was_cloned=False,
         )
 
-    if target_dir.exists() and any(target_dir.iterdir()):
-        raise GitHubURLError(
-            f"Target path exists but is not a git repo: {target_dir}. "
-            "Remove it manually or choose a different repository."
-        )
+    if target_dir.exists():
+        shutil.rmtree(target_dir, ignore_errors=True)
 
     target_dir.mkdir(parents=True, exist_ok=True)
     settings = get_settings()
@@ -134,8 +132,9 @@ def clone_github_repo(url: str) -> CloneResult:
     clone_url = _authenticated_clone_url(repo_info.clone_url, token)
 
     try:
-        Repo.clone_from(clone_url, str(target_dir))
+        Repo.clone_from(clone_url, str(target_dir), depth=1)
     except GitCommandError:
+        shutil.rmtree(target_dir, ignore_errors=True)
         # Suppress chained GitCommandError so auth token never leaks in logs or tracebacks
         raise GitHubURLError(
             f"Failed to clone {repo_info.full_name}. "
