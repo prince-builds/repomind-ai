@@ -39,6 +39,12 @@ def test_analyze_invalid_github_url(client: TestClient) -> None:
     assert "Only github.com" in response.json()["detail"]
 
 
+def test_analyze_with_repo_url_key(client: TestClient) -> None:
+    response = client.post("/api/repositories/analyze", json={"repo_url": "https://github.com/prince-builds/ai-study-copilot"})
+    assert response.status_code == 200
+    assert response.json()["repo_id"] == "prince-builds-ai-study-copilot"
+
+
 def test_get_nonexistent_repo_endpoints(client: TestClient) -> None:
     non_existent = "non-existent-repo"
     

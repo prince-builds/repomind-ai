@@ -1,12 +1,20 @@
 """Schemas for repository analysis, overview, and lifecycle management."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class AnalyzeRequest(BaseModel):
     """Request payload to analyze a repository."""
 
-    url: str = Field(..., description="GitHub repository URL or owner/repo format")
+    url: str = Field(default="", description="GitHub repository URL or owner/repo format")
+    repo_url: str | None = Field(default=None, description="Alternative field for repository URL")
+
+    @model_validator(mode="after")
+    def populate_url(self) -> "AnalyzeRequest":
+        target = self.url or self.repo_url or ""
+        if target:
+            self.url = target.strip()
+        return self
 
 
 class AnalyzeResponse(BaseModel):
