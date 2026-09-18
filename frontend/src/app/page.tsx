@@ -217,7 +217,7 @@ export default function Home() {
             <div>
               <h3 className="text-base font-bold text-white">Analyzing Repository</h3>
               <p className="text-xs text-white/50 mt-1 max-w-sm mx-auto">
-                Cloning git tree, parsing AST dependencies, computing SentenceTransformer embeddings, building FAISS search index, and generating Groq AI architecture insights...
+                Cloning git tree, parsing AST dependencies, computing FastEmbed embeddings, building FAISS search index, and generating Groq AI architecture insights...
               </p>
             </div>
           </div>

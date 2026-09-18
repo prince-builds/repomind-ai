@@ -43,7 +43,7 @@ class Embedder:
                 ) from exc
         return self._model
 
-    def embed_texts(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
+    def embed_texts(self, texts: list[str], batch_size: int = 16) -> np.ndarray:
         """
         Embed a list of strings using small batches to minimize peak memory.
 
@@ -60,7 +60,7 @@ class Embedder:
         except Exception as exc:
             raise EmbeddingError("Failed to generate embeddings.") from exc
 
-    def embed_chunks(self, chunks: list[TextChunk], batch_size: int = 32) -> np.ndarray:
+    def embed_chunks(self, chunks: list[TextChunk], batch_size: int = 16) -> np.ndarray:
         """Embed chunk content while metadata stays on TextChunk objects."""
         texts = [chunk.content for chunk in chunks]
         res = self.embed_texts(texts, batch_size=batch_size)

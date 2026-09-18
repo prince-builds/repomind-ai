@@ -23,14 +23,27 @@ class ApiError extends Error {
   }
 }
 
-async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
+interface FetchOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 60000;
+const ANALYZE_TIMEOUT_MS = 150000;
+
+async function fetchJson<T>(endpoint: string, options?: FetchOptions): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
+    const { timeoutMs: _, ...fetchOptions } = options || {};
     const res = await fetch(url, {
-      ...options,
+      ...fetchOptions,
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        ...options?.headers,
+        ...fetchOptions?.headers,
       },
     });
 
@@ -52,8 +65,26 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T>
     if (err instanceof ApiError) {
       throw err;
     }
-    const message = err instanceof Error ? err.message : "Failed to connect to backend server";
-    throw new ApiError(message, 500);
+
+    if (err instanceof Error) {
+      if (err.name === "AbortError") {
+        throw new ApiError(
+          "Request timed out while waiting for the backend response. Please try again shortly.",
+          408
+        );
+      }
+      if (err.message.includes("Failed to fetch") || err.name === "TypeError") {
+        throw new ApiError(
+          "The backend may be waking up or restarting due to limited resources. Please try again shortly.",
+          503
+        );
+      }
+      throw new ApiError(err.message, 500);
+    }
+
+    throw new ApiError("Failed to connect to backend server.", 500);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -66,6 +97,7 @@ export const api = {
     return fetchJson<AnalyzeResponse>("/api/repositories/analyze", {
       method: "POST",
       body: JSON.stringify({ url }),
+      timeoutMs: ANALYZE_TIMEOUT_MS,
     });
   },
 

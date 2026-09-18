@@ -107,9 +107,11 @@ class RepositoryStore:
             )
 
         parse_summary = parse_repository(local_path, scanned_files, repo_name)
+        gc.collect()
         logger.info(f"[MEM 3/8] After parse ({len(parse_summary.parsed_files)} files): RSS={get_current_rss_mb():.2f} MB")
 
         chunks = chunk_parsed_files(parse_summary.parsed_files)
+        gc.collect()
         max_chunks = int(os.getenv("MAX_REPO_CHUNKS", "800"))
         if len(chunks) > max_chunks:
             raise ValueError(

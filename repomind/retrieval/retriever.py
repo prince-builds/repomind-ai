@@ -41,6 +41,7 @@ class Retriever:
 
         embeddings = self.embedder.embed_chunks(chunks)
         self.store.build(embeddings, chunks)
+        del embeddings
 
     def query(self, question: str, top_k: int | None = None) -> list[RetrievalHit]:
         """
