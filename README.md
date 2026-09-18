@@ -114,15 +114,6 @@ Browse the interactive file tree and select any individual file to generate an e
 
 ---
 
-### 4. Technical Interview & Code Review Pack
-Generate structured interview evaluation packs, system design prompts, code-reading walkthroughs, and code review rubrics tailored specifically to the analyzed repository.
-
-<div align="center">
-  <img src="docs/readme-assets/interview-pack.png" alt="Interview Pack Generator" width="95%" />
-</div>
-
----
-
 ## 🏗️ System Architecture & Data Flow
 
 RepoMind AI is structured into decoupled frontend, REST API, parsing/ingestion, vector embedding, dependency graph, and LLM synthesis layers:
